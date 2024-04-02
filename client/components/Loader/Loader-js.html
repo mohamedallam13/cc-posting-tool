@@ -1,0 +1,13 @@
+<script>
+    const show = function (elementId) {
+        elementId = elementId || 'loading'
+        const loadingScreen = document.getElementById(elementId).style.display = 'block';
+    }
+
+    const hide = function (elementId) {
+        elementId = elementId || 'loading'
+        console.log(elementId)
+        const loadingScreen = document.getElementById(elementId).style.display = 'none';
+    }
+    //TODO: add parameter here distinguish between different loading element (passable)
+</script>

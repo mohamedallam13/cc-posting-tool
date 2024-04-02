@@ -1,0 +1,164 @@
+<script>
+    function loadFeed() {
+        show()
+        google.script.run
+            .withSuccessHandler(renderFeed)
+            .withFailureHandler(handleError)
+            .loadFeed();
+    }
+
+    function handleError(error) {
+        console.error('Error fetching data:', error);
+    }
+
+    function renderFeed(feedArrString) {
+        const feedArr = JSON.parse(feedArrString)
+        const latestNonPendingInFeed = getLatestInfeed(feedArr)
+        const container = document.getElementById('messages');
+        addFeedMessages(container, feedArr)
+        addSnapButton(container, latestNonPendingInFeed)
+        hide()
+        console.log("Should hide")
+    }
+
+    function addFeedMessages(container, feedArr) {
+        feedArr.forEach(msg => {
+            const messageElement = document.createElement('div');
+            console.log(msg.serialNum)
+            messageElement.classList.add('message');
+            messageElement.id = msg.serialNum
+            messageElement.dataset.message = msg.compoundedConfessionString
+
+            if (!msg.guidelinesComplientAnalysisObj.response) console.log(msg.serialNum)
+
+            // Check if the message is not compliant and add the 'non-compliant' class
+            if (msg.guidelinesComplientAnalysisObj.response) {
+                if (msg.guidelinesComplientAnalysisObj.response.match(/^(Yes|No)/)[0] === "No") {
+                    messageElement.classList.add('non-compliant');
+                }
+            }
+
+
+            messageElement.innerHTML = `
+                    <div class="timestamp">Timestamp: ${msg.timestamp}</div>
+                    <div class="messageText">${msg.compoundedConfession}</div>
+                    <div class="guidelineCompliant">Compliant with Guidelines: ${msg.guidelinesComplientAnalysisObj.response || "Yes."}</div>
+                    <div class="postStatus" >Status: <span class="statusText ${msg.status[0] ? msg.status[0].status.trim() : "pending"}">${msg.status[0] ? toProperCase(msg.status[0].status) : "Pending"}<!-- New Status Indicator --></span></div>
+                    <div class="buttonGroup">
+                    <button class="rejectButton" onclick="rejectPost(this.parentElement.parentElement, ${msg.guidelinesComplientAnalysisObj.response})">Reject</button> <!-- New Reject Button -->
+                    <button class="copyButton" onclick="copyToClipboard(this.parentElement.parentElement)">Copy</button>
+                    </div>
+                  `;
+            container.appendChild(messageElement);
+        });
+    }
+
+    function addSnapButton(container, latestNonPendingInFeed) {
+        const snapButton = document.createElement('button');
+        snapButton.id = 'snapButton'; // Give the button an ID for styling and selection
+        snapButton.classList.add('snapButton');
+        snapButton.textContent = 'Snap to Post'; // The text inside the button
+        snapButton.onclick = function () { snapToPost(latestNonPendingInFeed); }; // Replace 'post123' with the actual target post ID
+
+        // Append the button to the parent container
+        container.parentElement.appendChild(snapButton);
+    }
+
+    function getLatestInfeed(feedArr) {
+        const nonPending = feedArr.filter(entry => entry.status.length != 0)
+        console.log(nonPending[0])
+        return nonPending[0].serialNum;
+    }
+
+    function toProperCase(str) {
+        return str.replace(/\w\S*/g, function (txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
+    }
+
+    function snapToPost(postId) {
+        const element = document.getElementById(postId);
+        if (element) {
+            // Scroll the element to the center of the screen
+            const blockPosition = 'center';
+            element.scrollIntoView({ behavior: 'smooth', block: blockPosition, inline: 'nearest' });
+
+            // Apply the highlight effect
+            element.classList.add('highlighted');
+
+            // Remove the highlight effect after 2 seconds
+            setTimeout(() => {
+                element.classList.remove('highlighted');
+            }, 2000);
+        }
+        this.blur();
+    }
+
+    function showToast(text) {
+        var toast = document.getElementById("toast");
+        if (text) toast.innerHTML = text
+        toast.className = "show";
+        setTimeout(function () { toast.className = toast.className.replace("show", ""); }, 3000);
+        if (text) toast.innerHTML = 'Copied!'
+    }
+
+    function copyToClipboard(messageContianer) {
+        // const messageText = button.previousElementSibling.previousElementSibling.previousElementSibling.textContent;
+        const messageText = messageContianer.dataset.message;
+        navigator.clipboard.writeText(messageText).then(function () {
+            console.log('Text successfully copied to clipboard');
+            showToast(); // Show toast notification
+        }).catch(function (err) {
+            console.error('Error in copying text: ', err);
+        });
+        updateStatus(messageContianer, "scheduled")
+        this.blur();
+        updateDB({ serialNum: messageContianer.id }, "scheduled")
+    }
+
+    function rejectPost(element, rejectionReason) {
+        // Update the post's status to "Rejected"
+        updateStatus(element, "rejected")
+        this.blur();
+        // Add any additional reject logic here
+        updateDB({ serialNum: element.id, rejectionReason }, "rejected")
+    }
+
+    function updateStatus(element, status) {
+        console.log(element)
+        const statusTextElement = element.querySelector('.statusText');
+        const currentStatus = statusTextElement.innerHTML
+        if (currentStatus == "posted") {
+            showToast("Already posted and can no be changed!")
+            return
+        }
+        statusTextElement.innerHTML = toProperCase(status);
+        statusTextElement.className = 'statusText'; // Reset classes
+        statusTextElement.classList.add(status.toLowerCase()); // Add the proper class
+    }
+
+    function updateDB(serialNum, status) {
+        // toastWithSpinnerOn()
+        google.script.run
+            .withSuccessHandler(confirmChange)
+            .withFailureHandler(handleDBError)
+            .loadFeed(serialNum, status);
+    }
+
+    function confirmChange() {
+        // toastWithSpinnerOff()
+        showToast("Updated in DB!")
+    }
+
+    function handleDBError(error) {
+        console.error('Error updating DB:', error);
+        showToast("Failed to update DB!")
+    }
+
+    // Example usage:
+    // updateStatus(someElement, 'Pending'); // will add the 'pending' class
+
+
+    window.onload = loadFeed;
+
+</script>

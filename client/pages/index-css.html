@@ -1,0 +1,282 @@
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+        color: #333;
+    }
+
+    .snapButton {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      padding: 10px 20px;
+      background-color: #333; /* Dark grey background */
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      font-size: 16px;
+    }
+
+    .snapButton:hover {
+      background-color: #1a1a1a; /* Slightly darker on hover */
+    }
+
+    .snapButton::after {
+      content: ' \2193'; /* Unicode for down arrow */
+      display: inline-block;
+      margin-left: 8px;
+    }
+    #messages {
+        max-width: 600px;
+        margin: auto;
+    }
+
+    .message {
+        display: flex;
+        flex-direction: column;
+        background-color: #fff;
+        border-left: 5px solid #0084ff;
+        /* Default compliant color */
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        padding: 20px;
+        position: relative;
+
+    }
+
+    .non-compliant {
+        border-left-color: #ff4747;
+        /* Non-compliant color */
+    }
+
+    .timestamp,
+    .guidelineCompliant {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .messageText {
+        font-size: 1rem;
+        margin: 10px 0;
+        color: #444;
+    }
+
+    .messageText {
+        font-size: 1rem;
+        margin: 10px 0;
+        color: #444;
+    }
+
+    .messageText {
+        margin-bottom: 20px;
+        /* Add space for the button */
+        overflow-y: auto;
+        /* Make it scrollable if content is too long */
+    }
+
+    .messageText {
+        font-size: 1rem;
+        margin: 10px 0;
+        color: #444;
+        flex: 1;
+        padding-bottom: 20px;
+        /* Space for the button */
+    }
+
+    .postStatus {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .statusText {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      display: inline-block;
+      text-transform: capitalize;
+    }
+
+    .pending {
+      background-color: #fffae6; /* Light orange */
+      color: #cc8400;
+    }
+
+    .posted {
+      background-color: #e6ffec; /* Light green */
+      color: #287233;
+    }
+
+    .rejected {
+      background-color: #ffe6e9; /* Light red */
+      color: #cc0000;
+    }
+
+    .scheduled {
+      background-color: #e6e6ff; /* Light purple background for a soft look */
+      color: #5c5cd6; /* Darker purple text for contrast */
+    }
+
+    .buttonGroup {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px; /* Adjust gap between buttons */
+      margin-top: 10px;
+    }
+
+    button {
+        background-color: #0084ff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        outline: none;
+        align-self: flex-end;
+        margin-top: 10px;
+    }
+
+    button {
+        align-self: flex-end;
+        padding: 10px 20px;
+    }
+
+    button:hover {
+        background-color: #0056b3;
+    }
+
+    .copyButton {
+      background-color: #0084ff;
+      color: white;
+    }
+
+    .copyButton:hover {
+      background-color: #0056b3;
+    }
+
+    .rejectButton {
+      background-color: #ff4747;
+      color: white;
+    }
+
+    .rejectButton:hover {
+      background-color: #cc0000;
+    }
+
+    #toast {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        font-size: 17px;
+    }
+
+    #toast.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+
+    @keyframes highlight {
+      from { background-color: #ffff8d; } /* Soft yellow to highlight */
+      to { background-color: inherit; } /* Fade back to the original background */
+    }
+
+    #loadingToast {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 2px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1;
+      left: 50%;
+      bottom: 30px;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinnerToast {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 2s linear infinite;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .highlighted {
+      animation: highlight 2s; /* Run the animation over 2 seconds */
+    }
+
+    @media (max-width: 767px) {
+        #messages {
+            padding: 10px;
+        }
+
+        .message {
+            padding: 20px 10px;
+        }
+
+        .messageText {
+            padding-bottom: 60px;
+            /* Increased space for the button on smaller screens */
+        }
+
+        button {
+            padding: 8px 15px;
+            font-size: 0.8rem;
+            align-self: auto;
+            position: relative;
+            /* Adjust position for mobile */
+            margin-top: 10px;
+        }
+
+          /* Existing media query adjustments */
+        .buttonGroup {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        
+        button {
+          width: 100%; /* Full width buttons on smaller screens */
+          margin-bottom: 5px; /* Add space between buttons */
+        }
+
+        .snapButton {
+          padding: 10px 20px; /* Increase padding */
+          max-width: 250px; /* Or any other suitable value */
+          bottom: 10px;
+          right: 10px;
+          width: auto; /* Auto width allows the button to grow with the content and padding */
+          font-size: 1rem; /* Increase font size for better readability on small screens */
+        }
+    }
+</style>

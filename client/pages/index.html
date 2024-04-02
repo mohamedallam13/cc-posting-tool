@@ -1,0 +1,40 @@
+<!-- Paths -->
+<!-- Components -->
+<? const UserRow = 'client/components/UserRow/UserRow_2' ?>
+<? const Loader = 'client/components/Loader/Loader' ?>
+
+<!-- CSS -->
+<? const indexCSS = 'client/pages/index-css' ?>
+<? const LoaderCSS = 'client/components/Loader/Loader-css' ?>
+
+<!-- Javascript -->
+<? const indexJS = 'client/pages/index-js' ?>
+<? const LoaderJS = 'client/components/Loader/Loader-js' ?>
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?!= _I(indexCSS) ?>
+    <?!= _I(LoaderCSS) ?>
+
+</head>
+
+<body>
+    <div class="app-loader">
+        <?!= _I(Loader) ?>
+    </div>
+    <!-- Confessions Feed -->
+    <div class="app">
+        <div id="messages"></div>
+        <div id="toast">Copied!</div>
+    </div>
+
+    <?!= _I(indexJS) ?>
+    <?!= _I(LoaderJS) ?>
+</body>
+
+</html>
