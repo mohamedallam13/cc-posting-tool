@@ -52,11 +52,19 @@
     return JSON.stringify({ success: true, entryObj })
   }
 
+  function clearStatus(request) {
+    getDB()
+    clearStatusInDB(request)
+    writeToDB()
+    return JSON.stringify({ success: true })
+  }
+
   function getDB() {
     const referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES[1]).requiredFiles;
     indexFileId = referencesObj.CCJSONSimpleConfessionsIndex.fileId // Get DB Index File Id to start Connection
     jsonDBManager = initDB(indexFileId) // Start Connection with DB
   }
+
 
   function updateInDBStatus(request, status) {
     const { serialNum, rejectionReasons } = request
@@ -77,6 +85,15 @@
     return entryInDB
   }
 
+  function clearStatusInDB(request) {
+    const { addToDB } = jsonDBManager
+    const { serialNum } = request
+    const serialN = parseInt(serialNum)
+    const entryInDB = getEntryFromDB(serialN)
+    entryInDB.status = []
+    addToDB(entryInDB, { dbMain: "CCMAIN" })
+  }
+
   function getEntryFromDB(serialNum) {
     const { lookUpByKey } = jsonDBManager
     return lookUpByKey(serialNum, { dbMain: "CCMAIN" })
@@ -89,7 +106,8 @@
 
   return {
     loadFeed,
-    updateDB
+    updateDB,
+    clearStatus
   }
 
 })
@@ -101,4 +119,8 @@ function loadFeed() {
 function updateDB(request, status) {
   console.log(request, status)
   return BACKEND.updateDB(request, status)
+}
+function clearStatus(request) {
+  console.log(request)
+  return BACKEND.clearStatus(request)
 }

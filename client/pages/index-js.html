@@ -49,6 +49,7 @@
                     <div class="guidelineCompliant">Compliant with Guidelines: ${getResponseFromFBCompliance(msg)}</div>
                     <div class="postStatus" >Status: <span class="statusText ${msg.status[0] ? msg.status[0].status.trim() : "pending"}">${msg.status[0] ? toProperCase(msg.status[0].status) : "Pending"}</span></div>
                     <div class="buttonGroup">
+                    <button class="resetButton" onclick="resetPost(this.parentElement.parentElement)">Reset</button>
                     <button class="rejectButton" onclick="rejectPost(this.parentElement.parentElement)">Reject</button>
                     <button class="copyButton" onclick="copyToClipboard(this.parentElement.parentElement)">Copy</button>
                     </div>
@@ -77,7 +78,17 @@
     }
 
     function getLatestInfeed(feedArr) {
-        const nonPending = feedArr.filter(entry => entry.status.length != 0)
+        const nonPending = []
+        feedArr.forEach(entry => {
+            const { status } = entry
+            for (let statusObj of status) {
+                if (statusObj.status == "shadowed") break
+                if (statusObj.status == "posted" || statusObj.status == "scheduled") {
+                    nonPending.push(entry)
+                    break
+                }
+            }
+        })
         return nonPending[0].serialNum;
     }
 
@@ -212,6 +223,15 @@
         updateDB({ serialNum: messageContianer.id }, "scheduled")
     }
 
+    function resetPost(element) {
+        this.blur();
+        // Update the post's status to "pending"
+        const statusUpdated = updateStatus(element, "pending")
+        if (!statusUpdated) return
+        // Add any additional reject logic here
+        clearStatus({ serialNum: element.id })
+    }
+
     function rejectPost(element) {
         this.blur();
         // Find the .guidelineCompliant div within the passed element
@@ -230,6 +250,10 @@
     function updateStatus(element, status) {
         const statusTextElement = element.querySelector('.statusText');
         const currentStatus = statusTextElement.innerHTML.toLowerCase()
+        if (currentStatus == status) {
+            showToast(`Status already "${status}"`)
+            return
+        }
         if (currentStatus == "posted") {
             showToast("Already posted and can not be changed!")
             return
@@ -246,6 +270,14 @@
             .withSuccessHandler(confirmChange)
             .withFailureHandler(handleDBError)
             .updateDB(serialNum, status);
+    }
+
+    function clearStatus(serialNum, status) {
+        const { confirmChange, handleDBError } = toastWithSpinnerOn(serialNum)
+        google.script.run
+            .withSuccessHandler(confirmChange)
+            .withFailureHandler(handleDBError)
+            .clearStatus(serialNum, status);
     }
 
     function toastWithSpinnerOn(serialNum) {
