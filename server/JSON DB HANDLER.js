@@ -119,6 +119,7 @@
       const { properties } = INDEX[dbMain];
       const { cumulative } = properties
       dbFragment = getProperFragment(dbMain, dbFragment);
+      console.log(dbFragment)
       if (cumulative) dbFragment = checkOpenDBSize(dbMain, dbFragment);
       if (!dbFragment) return
       const { key, id } = entry;

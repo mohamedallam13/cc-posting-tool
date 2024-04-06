@@ -4,7 +4,9 @@
   const { REFERENCES_MANAGER } = CCLIBRARIES
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev"
-  const REQUIRED_REFERENCES = ["ccMainConfessionsFeed","CCJSONSimpleConfessionsIndex"];
+  const REQUIRED_REFERENCES = ["ccMainConfessionsFeed", "CCJSONSimpleConfessionsIndex"];
+
+  const initDB = JSON_DB_HANDLER.init
 
   let indexFileId
   let jsonDBManager
@@ -43,22 +45,24 @@
     return JSON.stringify(feed)
   }
 
-  function updateDB(request, status){
+  function updateDB(request, status) {
     getDB()
-    updateInDBStatus(request, status)
+    const entryObj = updateInDBStatus(request, status)
+    writeToDB()
+    return JSON.stringify({ success: true, entryObj })
   }
 
-  function getDB(){
+  function getDB() {
     const referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES[1]).requiredFiles;
-    const feed = referencesObj.ccMainConfessionsFeed.fileContent;
     indexFileId = referencesObj.CCJSONSimpleConfessionsIndex.fileId // Get DB Index File Id to start Connection
     jsonDBManager = initDB(indexFileId) // Start Connection with DB
   }
 
   function updateInDBStatus(request, status) {
     const { serialNum, rejectionReasons } = request
-    const entryInDB = getEntryFromDB(serialNum)
-    updateStatus(entryInDB, status, rejectionReasons)
+    const serialN = parseInt(serialNum)
+    const entryInDB = getEntryFromDB(serialN)
+    return updateStatus(entryInDB, status, rejectionReasons)
   }
 
   function updateStatus(entryInDB, status, rejectionReasons) {
@@ -70,6 +74,17 @@
     }
     entryInDB.status.unshift(statusUpdateObj)
     addToDB(entryInDB, { dbMain: "CCMAIN" })
+    return entryInDB
+  }
+
+  function getEntryFromDB(serialNum) {
+    const { lookUpByKey } = jsonDBManager
+    return lookUpByKey(serialNum, { dbMain: "CCMAIN" })
+  }
+
+  function writeToDB() {
+    const { saveToDBFiles } = jsonDBManager
+    saveToDBFiles()
   }
 
   return {
@@ -84,5 +99,6 @@ function loadFeed() {
 }
 
 function updateDB(request, status) {
+  console.log(request, status)
   return BACKEND.updateDB(request, status)
 }

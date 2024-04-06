@@ -7,6 +7,13 @@
             .loadFeed();
     }
 
+    document.body.addEventListener('click', function (e) {
+        // Check if the clicked element is a button
+        if (e.target.tagName === 'BUTTON') {
+            e.target.blur(); // Remove focus from the button
+        }
+    });
+
     function handleError(error) {
         console.error('Error fetching data:', error);
     }
@@ -18,39 +25,44 @@
         addFeedMessages(container, feedArr)
         addSnapButton(container, latestNonPendingInFeed)
         hide()
-        console.log("Should hide")
     }
 
     function addFeedMessages(container, feedArr) {
         feedArr.forEach(msg => {
             const messageElement = document.createElement('div');
-            console.log(msg.serialNum)
             messageElement.classList.add('message');
             messageElement.id = msg.serialNum
             messageElement.dataset.message = msg.compoundedConfessionString
 
-            if (!msg.guidelinesComplientAnalysisObj.response) console.log(msg.serialNum)
+            // if (!msg.guidelinesComplientAnalysisObj.response) console.log(msg.serialNum)
 
             // Check if the message is not compliant and add the 'non-compliant' class
-            if (msg.guidelinesComplientAnalysisObj.response) {
+            if (msg.guidelinesComplientAnalysisObj?.response) {
                 if (msg.guidelinesComplientAnalysisObj.response.match(/^(Yes|No)/)[0] === "No") {
                     messageElement.classList.add('non-compliant');
                 }
             }
 
-
             messageElement.innerHTML = `
                     <div class="timestamp">Timestamp: ${msg.timestamp}</div>
                     <div class="messageText">${msg.compoundedConfession}</div>
-                    <div class="guidelineCompliant">Compliant with Guidelines: ${msg.guidelinesComplientAnalysisObj.response || "Yes."}</div>
-                    <div class="postStatus" >Status: <span class="statusText ${msg.status[0] ? msg.status[0].status.trim() : "pending"}">${msg.status[0] ? toProperCase(msg.status[0].status) : "Pending"}<!-- New Status Indicator --></span></div>
+                    <div class="guidelineCompliant">Compliant with Guidelines: ${getResponseFromFBCompliance(msg)}</div>
+                    <div class="postStatus" >Status: <span class="statusText ${msg.status[0] ? msg.status[0].status.trim() : "pending"}">${msg.status[0] ? toProperCase(msg.status[0].status) : "Pending"}</span></div>
                     <div class="buttonGroup">
-                    <button class="rejectButton" onclick="rejectPost(this.parentElement.parentElement, ${msg.guidelinesComplientAnalysisObj.response})">Reject</button> <!-- New Reject Button -->
+                    <button class="rejectButton" onclick="rejectPost(this.parentElement.parentElement)">Reject</button>
                     <button class="copyButton" onclick="copyToClipboard(this.parentElement.parentElement)">Copy</button>
                     </div>
                   `;
             container.appendChild(messageElement);
         });
+    }
+
+    function getResponseFromFBCompliance(msg) {
+        if (msg.guidelinesComplientAnalysisObj) {
+            return msg.guidelinesComplientAnalysisObj.response || "Yes."
+        }
+        return "No Analysis performed on this post"
+
     }
 
     function addSnapButton(container, latestNonPendingInFeed) {
@@ -66,7 +78,6 @@
 
     function getLatestInfeed(feedArr) {
         const nonPending = feedArr.filter(entry => entry.status.length != 0)
-        console.log(nonPending[0])
         return nonPending[0].serialNum;
     }
 
@@ -77,6 +88,7 @@
     }
 
     function snapToPost(postId) {
+        this.blur();
         const element = document.getElementById(postId);
         if (element) {
             // Scroll the element to the center of the screen
@@ -89,70 +101,182 @@
             // Remove the highlight effect after 2 seconds
             setTimeout(() => {
                 element.classList.remove('highlighted');
-            }, 2000);
+            }, 5000);
         }
-        this.blur();
     }
 
     function showToast(text) {
-        var toast = document.getElementById("toast");
+        const toastsContainer = document.getElementById("toastsContainer");
+        const toast = document.createElement('div');
+        toast.classList.add('toast');
+        toast.classList.add('toast-slide-in');
+        toastsContainer.appendChild(toast)
         if (text) toast.innerHTML = text
-        toast.className = "show";
-        setTimeout(function () { toast.className = toast.className.replace("show", ""); }, 3000);
-        if (text) toast.innerHTML = 'Copied!'
+        setTimeout(function () {
+            toast.classList.remove('toast-slide-in');
+            toast.classList.add('toast-slide-out');
+            toast.addEventListener('animationend', () => {
+                toast.remove();
+            });
+        }, 5000);
     }
 
     function copyToClipboard(messageContianer) {
-        // const messageText = button.previousElementSibling.previousElementSibling.previousElementSibling.textContent;
+        this.blur();
         const messageText = messageContianer.dataset.message;
         navigator.clipboard.writeText(messageText).then(function () {
             console.log('Text successfully copied to clipboard');
-            showToast(); // Show toast notification
+            runScheduledDBUpdates(messageContianer)
         }).catch(function (err) {
             console.error('Error in copying text: ', err);
         });
-        updateStatus(messageContianer, "scheduled")
-        this.blur();
+    }
+
+    // function copyToClipboard(messageContianer) {
+    //     this.blur();
+    //     const messageText = messageContianer.dataset.message;
+    //     // Attempt to use the Clipboard API to copy text
+    //     if (navigator.clipboard && window.isSecureContext) {
+    //         // Use textContent for elements that contain text
+    //         navigator.clipboard.writeText(messageText).then(function () {
+    //             console.log('Text successfully copied to clipboard');
+    //             runScheduledDBUpdates(messageContianer)
+    //         }, function (err) {
+    //             console.error('Could not copy text: ', err);
+    //         });
+    //     } else {
+    //         // Fallback method for older browsers
+    //         // Create a temporary textarea element to hold the text to copy
+    //         const textarea = document.createElement('textarea');
+    //         textarea.value = messageText || messageText; // Get text content from the element
+    //         document.body.appendChild(textarea);
+    //         textarea.select(); // Select the text
+    //         try {
+    //             const successful = document.execCommand('copy'); // Execute the copy command
+    //             const msg = successful ? 'successful' : 'unsuccessful';
+    //             console.log('Fallback: Copying text command was ' + msg);
+    //             runScheduledDBUpdates(messageContianer)
+    //         } catch (err) {
+    //             console.error('Fallback: Could not copy text', err);
+    //         }
+
+    //         document.body.removeChild(textarea); // Clean up temporary textarea
+    //     }
+    // }
+
+    function makeTextCopyable(element) {
+        const messageTextDiv = element.querySelector('.messageText');
+        if (!messageTextDiv) return; // If the messageText div is not found, exit
+
+        // Toggle 'copyable' class for visual feedback
+        if (messageTextDiv.classList.contains('copyable')) {
+            messageTextDiv.classList.remove('copyable');
+            window.getSelection().removeAllRanges(); // Remove selection if clicking again
+        } else {
+            // First, clear any existing selections and 'copyable' classes
+            document.querySelectorAll('.messageText.copyable').forEach(el => {
+                el.classList.remove('copyable');
+                window.getSelection().removeAllRanges();
+            });
+
+            messageTextDiv.classList.add('copyable');
+
+            // Create a range and select the text content of the messageTextDiv
+            const range = document.createRange();
+            range.selectNodeContents(messageTextDiv);
+            const selection = window.getSelection();
+            selection.removeAllRanges(); // Clear existing selections to ensure new selection is added
+            selection.addRange(range);
+
+            // Optional: Show an instructional message
+            console.log('Text ready to copy. Press Ctrl+C (Cmd+C on Mac).');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.body.addEventListener('click', function (e) {
+            // Check if the clicked element or its parent has the class 'messageText'
+            let targetElement = e.target;
+            if (!targetElement.classList.contains('messageText')) {
+                targetElement = targetElement.closest('.messageText');
+            }
+            if (targetElement) {
+                makeTextCopyable(targetElement.parentElement); // Assuming the messageText's parent is the container
+            }
+        });
+    });
+    function runScheduledDBUpdates(messageContianer) {
+        const statusUpdated = updateStatus(messageContianer, "scheduled")
+        if (!statusUpdated) return
+        showToast("Copied!"); // Show toast notification
         updateDB({ serialNum: messageContianer.id }, "scheduled")
     }
 
-    function rejectPost(element, rejectionReason) {
-        // Update the post's status to "Rejected"
-        updateStatus(element, "rejected")
+    function rejectPost(element) {
         this.blur();
+        // Find the .guidelineCompliant div within the passed element
+        const guidelineCompliantElement = element.querySelector('.guidelineCompliant');
+
+        // Extract the text content. Assuming the format is "Compliant with Guidelines: <response>"
+        // We split the string by ": " and take the second part ([1]) to get the response text
+        const response = guidelineCompliantElement.textContent.split(": ")[1].trim();
+        // Update the post's status to "Rejected"
+        const statusUpdated = updateStatus(element, "rejected")
+        if (!statusUpdated) return
         // Add any additional reject logic here
-        updateDB({ serialNum: element.id, rejectionReason }, "rejected")
+        updateDB({ serialNum: element.id, response }, "rejected")
     }
 
     function updateStatus(element, status) {
-        console.log(element)
         const statusTextElement = element.querySelector('.statusText');
-        const currentStatus = statusTextElement.innerHTML
+        const currentStatus = statusTextElement.innerHTML.toLowerCase()
         if (currentStatus == "posted") {
-            showToast("Already posted and can no be changed!")
+            showToast("Already posted and can not be changed!")
             return
         }
         statusTextElement.innerHTML = toProperCase(status);
         statusTextElement.className = 'statusText'; // Reset classes
         statusTextElement.classList.add(status.toLowerCase()); // Add the proper class
+        return true
     }
 
     function updateDB(serialNum, status) {
-        // toastWithSpinnerOn()
+        const { confirmChange, handleDBError } = toastWithSpinnerOn(serialNum)
         google.script.run
             .withSuccessHandler(confirmChange)
             .withFailureHandler(handleDBError)
-            .loadFeed(serialNum, status);
+            .updateDB(serialNum, status);
     }
 
-    function confirmChange() {
-        // toastWithSpinnerOff()
-        showToast("Updated in DB!")
+    function toastWithSpinnerOn(serialNum) {
+        const spinnerToastElement = document.createElement('div');
+        spinnerToastElement.classList.add('toast');
+        spinnerToastElement.classList.add('toast-slide-in');
+        spinnerToastElement.id = `toast-${serialNum}`
+        spinnerToastElement.style.display = "none"
+        spinnerToastElement.innerHTML = `<div class="toastSpinner"></div>Updating DB..`
+        document.getElementById('toastsContainer').appendChild(spinnerToastElement)
+        spinnerToastElement.style.display = 'flex'
+        return {
+            confirmChange: function (success) {
+                console.log(JSON.parse(success))
+                toastWithSpinnerOff(spinnerToastElement)
+                showToast("Updated in DB!")
+            },
+            handleDBError: function (error) {
+                toastWithSpinnerOff(spinnerToastElement)
+                console.error('Error updating DB:', error);
+                showToast("Failed to update DB!")
+            }
+        }
     }
 
-    function handleDBError(error) {
-        console.error('Error updating DB:', error);
-        showToast("Failed to update DB!")
+    function toastWithSpinnerOff(element) {
+        element.classList.remove('toast-slide-in');
+        element.classList.add('toast-slide-out');
+        element.addEventListener('animationend', () => {
+            element.remove();
+        });
     }
 
     // Example usage:

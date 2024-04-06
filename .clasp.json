@@ -2,7 +2,7 @@
     "scriptId": "1DA9qYg-wWlYotYMCBw3ODntYXFYr5hPUP5ENn4M0OynZhFb8RBC_KJi9",
     "filePushOrder": [
         "server/ENV.js",
-        "JSON DB HANDLER.js",
+        "server/JSON DB HANDLER.js",
         "server/Backend.js",
         "server/Helpers.js",
         "server/Middleware.js",
