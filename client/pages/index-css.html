@@ -7,6 +7,59 @@
     color: #333;
   }
 
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%; /* This ensures the full height is covered */
+}
+
+.disabled-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for better readability */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* High z-index to ensure it covers all other content */
+    color: white;
+    font-family: 'Arial', sans-serif;
+}
+
+.disabled-message {
+    text-align: center;
+    background-color: #333; /* Dark background for the message box */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    padding: 20px;
+    width: auto; /* Automatically adjust the width based on content size */
+    max-width: 90%; /* Maximum width to not fully stretch on larger screens */
+    margin: 0 auto; /* Centering the box if width is less than max-width */
+}
+
+  /* Additional Responsive Adjustments */
+  @media (max-width: 768px) {
+    .disabled-message {
+      padding: 15px;
+      /* Slightly less padding on smaller devices */
+      font-size: 1.2rem;
+      /* Adjust font size for better readability on small screens */
+    }
+  }
+
+  @media (max-width: 480px) {
+    .disabled-message {
+      font-size: 1rem;
+      /* Smaller font size for very small devices */
+    }
+  }
+
+
   .snapButton {
     position: fixed;
     bottom: 20px;

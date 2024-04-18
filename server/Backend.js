@@ -4,7 +4,7 @@
   const { REFERENCES_MANAGER } = CCLIBRARIES
 
   const MASTER_INDEX_FILE_ID = "1ohC9kPnMxyptp8SadRBGAofibGiYTTev"
-  const REQUIRED_REFERENCES = ["ccMainConfessionsFeed", "CCJSONSimpleConfessionsIndex"];
+  const REQUIRED_REFERENCES = ["ccMainConfessionsFeed", "CCJSONSimpleConfessionsIndex", "ccPostingToolConfig"];
 
   const initDB = JSON_DB_HANDLER.init
 
@@ -40,9 +40,10 @@
   ];
 
   function loadFeed() {
-    const referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles(REQUIRED_REFERENCES[0]).requiredFiles;
-    const feed = referencesObj.ccMainConfessionsFeed.fileContent;
-    return JSON.stringify(feed)
+    const referencesObj = REFERENCES_MANAGER.init(MASTER_INDEX_FILE_ID).requireFiles([REQUIRED_REFERENCES[0],REQUIRED_REFERENCES[2]]).requiredFiles;
+    const feedArr = referencesObj.ccMainConfessionsFeed.fileContent;
+    const toolConfig = referencesObj.ccPostingToolConfig.fileContent;
+    return JSON.stringify({ feedArr, toolConfig })
   }
 
   function updateDB(request, status) {

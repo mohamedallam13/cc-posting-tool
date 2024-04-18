@@ -19,12 +19,28 @@
     }
 
     function renderFeed(feedArrString) {
-        const feedArr = JSON.parse(feedArrString)
+        const { feedArr, toolConfig } = JSON.parse(feedArrString)
+        if (toolConfig.toolDisabled) {
+            renderToolIsDisabled()
+            hide()
+            return
+        }
         const latestNonPendingInFeed = getLatestInfeed(feedArr)
         const container = document.getElementById('messages');
         addFeedMessages(container, feedArr)
         addSnapButton(container, latestNonPendingInFeed)
         hide()
+    }
+
+    function renderToolIsDisabled() {
+        const appContainer = document.getElementById('app');
+        const overlay = document.createElement('div');
+        overlay.className = 'disabled-overlay';
+        overlay.innerHTML = '<div class="disabled-message">Tool has been blocked by autoposting</div>';
+
+        // Append the overlay to the body or hide the rest of the app
+        appContainer.appendChild(overlay);
+        // appContainer.style.display = 'none'; // Optionally hide the rest of the app
     }
 
     function addFeedMessages(container, feedArr) {
